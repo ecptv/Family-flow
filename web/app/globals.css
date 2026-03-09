@@ -1,26 +1,93 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
 
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+::-webkit-scrollbar { width: 0; }
+input::placeholder { color: var(--text-muted); }
+
+/* ── THEME VARIABLES ── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg:           #0a0a14;
+  --bg-card:      rgba(255,255,255,0.03);
+  --bg-card-hover:rgba(255,255,255,0.06);
+  --border:       rgba(255,255,255,0.07);
+  --border-focus: rgba(167,139,250,0.4);
+  --text:         #ffffff;
+  --text-sub:     rgba(255,255,255,0.5);
+  --text-muted:   rgba(255,255,255,0.25);
+  --input-bg:     rgba(255,255,255,0.05);
+  --input-border: rgba(255,255,255,0.1);
+  --accent:       #A78BFA;
+  --accent-dark:  #7C3AED;
+  --sidebar-bg:   #1A2332;
+  --sidebar-border: rgba(255,255,255,0.06);
+  --divider:      rgba(255,255,255,0.06);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root.light {
+  --bg:           #F5F0E8;
+  --bg-card:      rgba(255,255,255,0.7);
+  --bg-card-hover:rgba(255,255,255,0.9);
+  --border:       rgba(0,0,0,0.08);
+  --border-focus: rgba(124,58,237,0.4);
+  --text:         #1a1a2e;
+  --text-sub:     rgba(26,26,46,0.55);
+  --text-muted:   rgba(26,26,46,0.3);
+  --input-bg:     rgba(255,255,255,0.8);
+  --input-border: rgba(0,0,0,0.12);
+  --accent:       #7C3AED;
+  --accent-dark:  #6D28D9;
+  --sidebar-bg:   #2B5BA8;
+--sidebar-border: rgba(255,255,255,0.15);
+  --divider:      rgba(0,0,0,0.07);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'DM Sans', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.3s, color 0.3s;
 }
+
+/* Reusable classes */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 22px 24px;
+}
+
+.card-sm {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.input:focus { border-color: var(--border-focus); }
+
+.label {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.section-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.section-sub   { font-size: 13px; color: var(--text-sub); }
+.divider       { height: 1px; background: var(--divider); margin: 20px 0; }
+.page-title    { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; color: var(--text); }
+.page-sub      { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
