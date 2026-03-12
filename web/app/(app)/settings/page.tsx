@@ -1,19 +1,14 @@
 "use client";
 
-import { useState } from "react";
-
-const initialChildren = [
-  { id: 1, name: "Emma", age: 11, avatar: "🧒", screenTimeLimit: 5 },
-  { id: 2, name: "Liam", age: 8, avatar: "👦", screenTimeLimit: 4 },
-];
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 const avatarOptions = ["🧒", "👦", "👧", "🧑", "👩", "👨", "🐱", "🐶", "🦊", "🐼"];
 
 function Section({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
     <div style={{
-      background: "var(--bg-card)",
-      border: "1px solid var(--border)",
+      background: "var(--bg-card)", border: "1px solid var(--border)",
       borderRadius: 20, padding: "24px 28px", marginBottom: 16,
     }}>
       <div style={{ marginBottom: 20 }}>
@@ -37,16 +32,12 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function Input({ value, onChange, type = "text", placeholder }: { value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) {
   return (
     <input
-      type={type}
-      value={value}
-      placeholder={placeholder}
+      type={type} value={value} placeholder={placeholder}
       onChange={e => onChange(e.target.value)}
       style={{
-        background: "var(--input-bg)",
-        border: "1px solid var(--input-border)",
-        borderRadius: 10, padding: "10px 14px",
-        color: "var(--text)", fontSize: 14,
-        outline: "none", fontFamily: "inherit", width: "100%",
+        background: "var(--input-bg)", border: "1px solid var(--input-border)",
+        borderRadius: 10, padding: "10px 14px", color: "var(--text)",
+        fontSize: 14, outline: "none", fontFamily: "inherit", width: "100%",
         transition: "border-color 0.2s",
       }}
     />
@@ -66,8 +57,7 @@ function Toggle({ value, onChange, label, sub }: { value: boolean; onChange: (v:
         position: "relative", transition: "background 0.25s", flexShrink: 0, marginLeft: 16,
       }}>
         <div style={{
-          position: "absolute", top: 3,
-          left: value ? 23 : 3,
+          position: "absolute", top: 3, left: value ? 23 : 3,
           width: 18, height: 18, borderRadius: "50%",
           background: "#fff", transition: "left 0.25s",
           boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
@@ -77,11 +67,11 @@ function Toggle({ value, onChange, label, sub }: { value: boolean; onChange: (v:
   );
 }
 
-function ChildEditor({ child, onSave, onDelete, onClose }: { child: any; onSave: (c: any) => void; onDelete: (id: number) => void; onClose: () => void }) {
-  const [name, setName] = useState(child.name);
-  const [age, setAge] = useState(String(child.age));
-  const [avatar, setAvatar] = useState(child.avatar);
-  const [limit, setLimit] = useState(child.screenTimeLimit);
+function ChildEditor({ child, onSave, onDelete, onClose }: { child: any; onSave: (c: any) => void; onDelete: (id: string) => void; onClose: () => void }) {
+  const [name, setName] = useState(child.name || "");
+  const [age, setAge] = useState(String(child.age || 8));
+  const [avatar, setAvatar] = useState(child.avatar || "🧒");
+  const [limit, setLimit] = useState(child.screen_time_limit || 4);
 
   return (
     <div style={{
@@ -90,12 +80,12 @@ function ChildEditor({ child, onSave, onDelete, onClose }: { child: any; onSave:
       display: "flex", alignItems: "center", justifyContent: "center",
     }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
-        background: "#13132a", border: "1px solid rgba(167,139,250,0.25)",
+        background: "var(--bg)", border: "1px solid rgba(167,139,250,0.25)",
         borderRadius: 24, padding: 32, width: 380,
         boxShadow: "0 32px 80px rgba(0,0,0,0.6)",
       }}>
         <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", marginBottom: 24 }}>
-          {child.id === -1 ? "Add Child" : "Edit Child"}
+          {child.id ? "Edit Child" : "Add Child"}
         </div>
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 12, color: "var(--text-muted)", letterSpacing: "0.05em", marginBottom: 8 }}>AVATAR</div>
@@ -104,8 +94,8 @@ function ChildEditor({ child, onSave, onDelete, onClose }: { child: any; onSave:
               <div key={a} onClick={() => setAvatar(a)} style={{
                 width: 40, height: 40, borderRadius: 10, fontSize: 20,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                background: avatar === a ? "rgba(167,139,250,0.2)" : "rgba(255,255,255,0.05)",
-                border: avatar === a ? "1px solid rgba(167,139,250,0.5)" : "1px solid transparent",
+                background: avatar === a ? "rgba(167,139,250,0.2)" : "var(--bg-card)",
+                border: avatar === a ? "1px solid rgba(167,139,250,0.5)" : "1px solid var(--border)",
                 cursor: "pointer", transition: "all 0.15s",
               }}>{a}</div>
             ))}
@@ -116,14 +106,13 @@ function ChildEditor({ child, onSave, onDelete, onClose }: { child: any; onSave:
         <Field label={`Screen time limit: ${limit}h / day`}>
           <input type="range" min={0.5} max={10} step={0.5} value={limit}
             onChange={e => setLimit(parseFloat(e.target.value))}
-            style={{ width: "100%", accentColor: "#A78BFA" }}
-          />
+            style={{ width: "100%", accentColor: "#A78BFA" }} />
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
             <span>0.5h</span><span>10h</span>
           </div>
         </Field>
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-          {child.id !== -1 && (
+          {child.id && (
             <button onClick={() => { onDelete(child.id); onClose(); }} style={{
               padding: "11px 16px", borderRadius: 12, border: "none",
               background: "rgba(248,113,113,0.1)", outline: "1px solid rgba(248,113,113,0.25)",
@@ -132,13 +121,13 @@ function ChildEditor({ child, onSave, onDelete, onClose }: { child: any; onSave:
           )}
           <button onClick={onClose} style={{
             flex: 1, padding: "11px 0", borderRadius: 12, border: "none",
-            background: "var(--bg-card)",
-            color: "var(--text-sub)", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
+            background: "var(--bg-card)", color: "var(--text-sub)",
+            fontSize: 13, cursor: "pointer", fontFamily: "inherit",
           }}>Cancel</button>
-          <button onClick={() => { onSave({ ...child, name, age: parseInt(age), avatar, screenTimeLimit: limit }); onClose(); }} style={{
+          <button onClick={() => onSave({ ...child, name, age: parseInt(age), avatar, screen_time_limit: limit })} style={{
             flex: 1, padding: "11px 0", borderRadius: 12, border: "none",
             background: "linear-gradient(135deg, #7C3AED, #A78BFA)",
-            color: "var(--text)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+            color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
           }}>Save</button>
         </div>
       </div>
@@ -155,14 +144,12 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
       display: "flex", alignItems: "center", justifyContent: "center",
     }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
-        background: "#13132a", border: "1px solid rgba(248,113,113,0.3)",
+        background: "var(--bg)", border: "1px solid rgba(248,113,113,0.3)",
         borderRadius: 24, padding: 32, width: 380,
         boxShadow: "0 32px 80px rgba(0,0,0,0.6)",
       }}>
         <div style={{ fontSize: 32, textAlign: "center", marginBottom: 12 }}>⚠️</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text)", textAlign: "center", marginBottom: 8 }}>
-          Delete Account
-        </div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text)", textAlign: "center", marginBottom: 8 }}>Delete Account</div>
         <div style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", lineHeight: 1.6, marginBottom: 24 }}>
           This will permanently delete your account and all family data. This action cannot be undone.
         </div>
@@ -172,16 +159,16 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
           <button onClick={onClose} style={{
             flex: 1, padding: "12px 0", borderRadius: 12, border: "none",
-            background: "var(--bg-card)",
-            color: "var(--text-sub)", fontSize: 14, cursor: "pointer", fontFamily: "inherit",
+            background: "var(--bg-card)", color: "var(--text-sub)",
+            fontSize: 14, cursor: "pointer", fontFamily: "inherit",
           }}>Cancel</button>
           <button
             disabled={confirm !== "DELETE"}
             onClick={() => alert("Delete account — will be implemented with backend")}
             style={{
               flex: 1, padding: "12px 0", borderRadius: 12, border: "none",
-              background: confirm === "DELETE" ? "linear-gradient(135deg, #DC2626, #F87171)" : "rgba(255,255,255,0.05)",
-              color: confirm === "DELETE" ? "#fff" : "rgba(255,255,255,0.2)",
+              background: confirm === "DELETE" ? "linear-gradient(135deg, #DC2626, #F87171)" : "var(--bg-card)",
+              color: confirm === "DELETE" ? "#fff" : "var(--text-muted)",
               fontSize: 14, fontWeight: 600,
               cursor: confirm === "DELETE" ? "pointer" : "not-allowed",
               fontFamily: "inherit", transition: "all 0.2s",
@@ -193,16 +180,17 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
 }
 
 export default function SettingsPage() {
-  const [name, setName] = useState("Sarah Johnson");
-  const [email, setEmail] = useState("sarah@example.com");
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [children, setChildren] = useState(initialChildren);
+  const [profile, setProfile] = useState<any>(null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [children, setChildren] = useState<any[]>([]);
   const [editingChild, setEditingChild] = useState<any>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [darkMode, setDarkMode] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
   const [notifs, setNotifs] = useState({
@@ -213,51 +201,150 @@ export default function SettingsPage() {
     appInstalled: false,
   });
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  // Load profile + children
+  useEffect(() => {
+  const load = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log("SESSION IN SETTINGS:", session);
+      const user = session?.user;
+      
+      if (!user) {
+        console.log("NO SESSION - redirecting");
+        setLoading(false);
+        return;
+      }
+
+      const { data: prof, error: profError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      console.log("PROFILE:", prof, "ERROR:", profError);
+
+      if (prof) {
+        setProfile(prof);
+        setName(prof.full_name || "");
+        setEmail(prof.email || user.email || "");
+      } else {
+        setEmail(user.email || "");
+      }
+
+      const { data: kids, error: kidsError } = await supabase
+        .from("children")
+        .select("*")
+        .eq("parent_id", user.id)
+        .order("created_at");
+
+      console.log("KIDS:", kids, "ERROR:", kidsError);
+      if (kids) setChildren(kids);
+
+    } catch (err) {
+      console.error("LOAD ERROR:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  load();
+}, []);
+
+  const handleSave = async () => {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  console.log("SESSION:", session, "ERROR:", sessionError);
+  const user = session?.user;
+  if (!user) { console.log("NO USER FOUND"); return; }
+
+  const { error } = await supabase.from("profiles")
+    .update({ full_name: name, email })
+    .eq("id", user.id);
+
+  console.log("UPDATE ERROR:", error);
+
+  setSaved(true);
+  setTimeout(() => setSaved(false), 2500);
+};
+
+  const handleSaveChild = async (child: any) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
+  console.log("USER IN SAVE CHILD:", user);
+  if (!user) { console.log("NO USER"); return; }
+
+  if (child.id && typeof child.id === 'string' && child.id.length > 0) {
+    const result = await supabase.from("children")
+      .update({
+        name: child.name,
+        age: child.age,
+        avatar: child.avatar,
+        screen_time_limit: child.screen_time_limit,
+      })
+      .eq("id", child.id)
+      .select()
+      .single();
+    console.log("UPDATE RESULT:", result);
+    if (result.data) setChildren(prev => prev.map(c => c.id === child.id ? result.data : c));
+  } else {
+    const result = await supabase.from("children")
+      .insert({
+        name: child.name,
+        age: child.age,
+        avatar: child.avatar,
+        screen_time_limit: child.screen_time_limit,
+        parent_id: user.id,
+      })
+      .select()
+      .single();
+    console.log("INSERT RESULT:", result);
+    if (result.data) setChildren(prev => [...prev, result.data]);
+  }
+  // re-fetch children
+  const { data: kids } = await supabase
+    .from("children")
+    .select("*")
+    .eq("parent_id", user.id)
+    .order("created_at");
+  if (kids) setChildren(kids);
+  
+  setEditingChild(null);
+};
+
+  const handleDeleteChild = async (id: string) => {
+    await supabase.from("children").delete().eq("id", id);
+    setChildren(prev => prev.filter(c => c.id !== id));
   };
 
-  const handleSaveChild = (updated: any) => {
-    if (updated.id === -1) {
-      setChildren(prev => [...prev, { ...updated, id: Date.now() }]);
-    } else {
-      setChildren(prev => prev.map(c => c.id === updated.id ? updated : c));
-    }
-  };
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) { setPasswordError("Please fill in all fields."); return; }
+    if (newPassword !== confirmPassword) { setPasswordError("Passwords don't match."); return; }
+    if (newPassword.length < 6) { setPasswordError("Password must be at least 6 characters."); return; }
 
-  const handleChangePassword = () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordError("Please fill in all password fields.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setPasswordError("New passwords don't match.");
-      return;
-    }
-    if (newPassword.length < 8) {
-      setPasswordError("Password must be at least 8 characters.");
-      return;
-    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) { setPasswordError(error.message); return; }
+
     setPasswordError("");
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
-    alert("Password changed! (Will connect to backend later)");
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
   };
 
-  return (
-    <div >
+  if (loading) return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
+      <div style={{ fontSize: 14, color: "var(--text-muted)" }}>Loading...</div>
+    </div>
+  );
 
+  return (
+    <div>
       <div style={{ padding: "28px 32px", maxWidth: 720, margin: "0 auto" }}>
 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32 }}>
           <div>
-            <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.03em" }}>Settings</div>
-            <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>
-              Manage your account and family preferences
-            </div>
+            <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.03em", color: "var(--text)" }}>Settings</div>
+            <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>Manage your account and family preferences</div>
           </div>
           <button onClick={handleSave} style={{
             padding: "10px 22px", borderRadius: 12, border: "none",
@@ -266,9 +353,7 @@ export default function SettingsPage() {
             color: saved ? "#4ADE80" : "#fff",
             fontSize: 14, fontWeight: 600, cursor: "pointer",
             fontFamily: "inherit", transition: "all 0.3s",
-          }}>
-            {saved ? "✓ Saved!" : "Save Changes"}
-          </button>
+          }}>{saved ? "✓ Saved!" : "Save Changes"}</button>
         </div>
 
         {/* Profile */}
@@ -278,9 +363,9 @@ export default function SettingsPage() {
               width: 56, height: 56, borderRadius: 16,
               background: "linear-gradient(135deg, #7C3AED, #A78BFA)",
               display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24,
-            }}>👩</div>
+            }}>{profile?.avatar || "👩"}</div>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text)" }}>{name}</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text)" }}>{name || "—"}</div>
               <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>Parent Account</div>
             </div>
           </div>
@@ -293,39 +378,40 @@ export default function SettingsPage() {
         {/* Children */}
         <Section title="Manage Children" description="Add, edit or remove children from your family">
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+            {children.length === 0 && (
+              <div style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: "20px 0" }}>
+                No children added yet.
+              </div>
+            )}
             {children.map(child => (
               <div key={child.id} style={{
                 display: "flex", alignItems: "center", gap: 14,
-                background: "var(--bg-card)",
-                border: "1px solid var(--border)",
+                background: "var(--bg-card)", border: "1px solid var(--border)",
                 borderRadius: 14, padding: "14px 16px",
               }}>
                 <div style={{
                   width: 40, height: 40, borderRadius: 12,
-                  background: "var(--bg-card)",
+                  background: "rgba(167,139,250,0.1)",
                   display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
                 }}>{child.avatar}</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>{child.name}</div>
                   <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                    Age {child.age} · {child.screenTimeLimit}h daily limit
+                    Age {child.age} · {child.screen_time_limit}h daily limit
                   </div>
                 </div>
                 <button onClick={() => setEditingChild(child)} style={{
                   padding: "6px 14px", borderRadius: 8, border: "none",
-                  background: "rgba(167,139,250,0.1)",
-                  outline: "1px solid rgba(167,139,250,0.2)",
+                  background: "rgba(167,139,250,0.1)", outline: "1px solid rgba(167,139,250,0.2)",
                   color: "#A78BFA", fontSize: 12, cursor: "pointer", fontFamily: "inherit",
                 }}>Edit</button>
               </div>
             ))}
           </div>
-          <button onClick={() => setEditingChild({ id: -1, name: "", age: 8, avatar: "🧒", screenTimeLimit: 4 })} style={{
+          <button onClick={() => setEditingChild({})} style={{
             width: "100%", padding: "12px 0", borderRadius: 12, border: "none",
-            background: "var(--bg-card)",
-            outline: "1px solid rgba(255,255,255,0.08)",
-            color: "rgba(255,255,255,0.45)", fontSize: 14,
-            cursor: "pointer", fontFamily: "inherit",
+            background: "var(--bg-card)", outline: "1px solid var(--border)",
+            color: "var(--text-muted)", fontSize: 14, cursor: "pointer", fontFamily: "inherit",
           }}>+ Add Child</button>
         </Section>
 
@@ -340,15 +426,8 @@ export default function SettingsPage() {
 
         {/* Account & Security */}
         <Section title="Account & Security" description="Password and account management">
-
-          {/* Change password */}
           <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-sub)", marginBottom: 14 }}>
-              Change Password
-            </div>
-            <Field label="Current Password">
-              <Input value={currentPassword} onChange={setCurrentPassword} type="password" placeholder="••••••••" />
-            </Field>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-sub)", marginBottom: 14 }}>Change Password</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <Field label="New Password">
                 <Input value={newPassword} onChange={setNewPassword} type="password" placeholder="••••••••" />
@@ -366,59 +445,49 @@ export default function SettingsPage() {
             )}
             <button onClick={handleChangePassword} style={{
               padding: "10px 20px", borderRadius: 10, border: "none",
-              background: "rgba(167,139,250,0.1)",
-              outline: "1px solid rgba(167,139,250,0.25)",
+              background: "rgba(167,139,250,0.1)", outline: "1px solid rgba(167,139,250,0.25)",
               color: "#A78BFA", fontSize: 13, fontWeight: 600,
               cursor: "pointer", fontFamily: "inherit",
             }}>Update Password</button>
           </div>
 
-          {/* Divider */}
-          <div style={{ height: 1, background: "var(--bg-card)", marginBottom: 24 }} />
+          <div style={{ height: 1, background: "var(--divider)", marginBottom: 24 }} />
 
-          {/* Sign out + delete */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <button
-              onClick={() => window.location.href = "/home"}
+              onClick={async () => {
+                await supabase.auth.signOut();
+                window.location.href = "/home";
+              }}
               style={{
                 width: "100%", padding: "13px 0", borderRadius: 12, border: "none",
-                background: "var(--bg-card)",
-                outline: "1px solid rgba(255,255,255,0.08)",
+                background: "var(--bg-card)", outline: "1px solid var(--border)",
                 color: "var(--text-sub)", fontSize: 14, fontWeight: 600,
                 cursor: "pointer", fontFamily: "inherit",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              }}>
-              🚪 Sign Out
-            </button>
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              style={{
-                width: "100%", padding: "13px 0", borderRadius: 12, border: "none",
-                background: "rgba(248,113,113,0.07)",
-                outline: "1px solid rgba(248,113,113,0.2)",
-                color: "#F87171", fontSize: 14, fontWeight: 600,
-                cursor: "pointer", fontFamily: "inherit",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              }}>
-              🗑 Delete Account
-            </button>
+              }}>🚪 Sign Out</button>
+            <button onClick={() => setShowDeleteModal(true)} style={{
+              width: "100%", padding: "13px 0", borderRadius: 12, border: "none",
+              background: "rgba(248,113,113,0.07)", outline: "1px solid rgba(248,113,113,0.2)",
+              color: "#F87171", fontSize: 14, fontWeight: 600,
+              cursor: "pointer", fontFamily: "inherit",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            }}>🗑 Delete Account</button>
           </div>
         </Section>
 
       </div>
 
-      {editingChild && (
+      {editingChild !== null && (
         <ChildEditor
           child={editingChild}
           onSave={handleSaveChild}
-          onDelete={(id) => setChildren(prev => prev.filter(c => c.id !== id))}
+          onDelete={handleDeleteChild}
           onClose={() => setEditingChild(null)}
         />
       )}
 
-      {showDeleteModal && (
-        <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />
-      )}
+      {showDeleteModal && <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />}
     </div>
   );
 }
