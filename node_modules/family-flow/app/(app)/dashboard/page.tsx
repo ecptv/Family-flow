@@ -89,22 +89,48 @@ export default function FamilyFlowDashboard() {
   const [messageSent, setMessageSent] = useState(false);
 
   useEffect(() => {
-    const load = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const user = session?.user;
-      if (!user) { setLoading(false); return; }
+  const load = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
+    if (!user) { setLoading(false); return; }
 
-      const { data: kids } = await supabase
-        .from("children")
-        .select("*")
-        .eq("parent_id", user.id)
-        .order("created_at");
+    const { data: kids } = await supabase
+      .from("children")
+      .select("*")
+      .eq("parent_id", user.id)
+      .order("created_at");
 
-      if (kids) setChildren(kids);
-      setLoading(false);
-    };
-    load();
-  }, []);
+    if (kids) setChildren(kids);
+    setLoading(false);
+  };
+  load();
+}, []);
+
+
+useEffect(() => {
+  if (children.length === 0) return;
+  const child = children[selected];
+  if (!child) return;
+
+  const channel = supabase
+    .channel("dashboard:" + child.id)
+    .on("postgres_changes", {
+      event: "*", schema: "public", table: "screen_time_logs",
+      filter: "child_id=eq." + child.id,
+    }, () => loadChildData(child.id))
+    .on("postgres_changes", {
+      event: "*", schema: "public", table: "mood_logs",
+      filter: "child_id=eq." + child.id,
+    }, () => loadChildData(child.id))
+    .on("postgres_changes", {
+      event: "*", schema: "public", table: "screen_controls",
+      filter: "child_id=eq." + child.id,
+    }, () => loadChildData(child.id))
+    .subscribe();
+
+  return () => { supabase.removeChannel(channel); };
+}, [children, selected]);
+
 
   useEffect(() => {
     if (children.length === 0) return;
@@ -209,7 +235,7 @@ export default function FamilyFlowDashboard() {
   const latestMood = moodLogs[0];
   const moodHistory = moodLogs.slice(0, 7).reverse();
   const todayScreen = screenTimeLogs.find(s => s.date === new Date().toISOString().split("T")[0]);
-  const screenUsed = todayScreen?.minutes_used || 0;
+  const screenUsed = (todayScreen?.minutes_used || 0) / 60; // conversie minute → ore
   const screenLimit = child.screen_time_limit || 4;
   const over = screenUsed > screenLimit;
   const alerts = children.filter(c => {
@@ -218,10 +244,10 @@ export default function FamilyFlowDashboard() {
   });
 
   const weeklyScreen = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-    const log = screenTimeLogs.find(s => s.date === d);
-    return log?.minutes_used || 0;
-  });
+  const d = new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const log = screenTimeLogs.find(s => s.date === d);
+  return (log?.minutes_used || 0) / 60; // minute → ore
+});
 
   return (
     <div style={{ padding: "28px 32px", maxWidth: 1100 }}>

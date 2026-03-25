@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "FamilyFlow",
+    "slug": "family-flow",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "familyflow",
+    "userInterfaceStyle": "automatic",
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1A2332"
+      },
+      "package": "com.familyflow.app"
+    }
+  }
+}
